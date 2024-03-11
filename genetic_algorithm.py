@@ -4,6 +4,7 @@ from itertools import product
 import matplotlib.pyplot as plt
 import time
 
+
 def parse_tsp_file(file_path):
     coordinates = []
     with open(file_path, 'r') as file:
@@ -20,15 +21,18 @@ def parse_tsp_file(file_path):
                 coordinates.append((float(x), float(y)))
     return coordinates
 
+
 def calculate_distance(city1, city2):
     return np.sqrt((city1[0] - city2[0]) ** 2 + (city1[1] - city2[1]) ** 2)
 
+
 def total_distance(coords, solution):
-    """Calculate the total distance of the travel path."""
     return sum(calculate_distance(coords[solution[i]], coords[solution[i - 1]]) for i in range(len(solution)))
+
 
 def create_initial_population(size, n_coordinates):
     return [random.sample(range(n_coordinates), n_coordinates) for _ in range(size)]
+
 
 def tournament_selection(population, scores, k=5):
     selection_ix = np.random.randint(len(population), size=k)
@@ -41,11 +45,7 @@ def crossover(parent1, parent2):
     size = len(parent1)
     child = [None] * size
     start, end = sorted(random.sample(range(size), 2))
-
-    # Copy a part of parent1 to the child
     child[start:end] = parent1[start:end]
-
-    # Fill the remaining part from parent2
     p2_index = end
     c_index = end
     while None in child:
@@ -56,9 +56,8 @@ def crossover(parent1, parent2):
 
     return child
 
+
 def mutate(solution, coords, max_attempts=10):
-    # i, j = sorted(random.sample(range(len(tour)), 2))
-    # tour[i:j + 1] = reversed(tour[i:j + 1])
     best_distance = total_distance(coords, solution)
     for _ in range(max_attempts):
         start, end = sorted(random.sample(range(1, len(solution)), 2))
@@ -69,8 +68,8 @@ def mutate(solution, coords, max_attempts=10):
 
     return solution
 
+
 def genetic_algorithm(coordinates, population_size, n_generations, crossover_rate, mutation_rate):
-    # Create initial population
     population = create_initial_population(population_size, len(coordinates))
     best_distance = float('inf')
     best_tour = None
@@ -82,10 +81,8 @@ def genetic_algorithm(coordinates, population_size, n_generations, crossover_rat
             if score < best_distance:
                 best_distance, best_tour = score, population[i]
 
-        # Select parents
         selected = [tournament_selection(population, scores) for _ in range(population_size)]
 
-        # Create the next generation
         children = []
         for i in range(0, population_size, 2):
             parent1, parent2 = selected[i], selected[i + 1]
@@ -95,7 +92,6 @@ def genetic_algorithm(coordinates, population_size, n_generations, crossover_rat
             else:
                 child1, child2 = parent1.copy(), parent2.copy()
 
-                # Apply mutation with inversion_mutation based on mutation_rate
             if random.random() < mutation_rate:
                 child1 = mutate(child1, coordinates)
             if random.random() < mutation_rate:
@@ -135,6 +131,7 @@ def execute_with_tuned_parameters(coordinates, best_params, runs):
     for run in range(runs):
         print(f"Running run {run + 1}/{runs} with n_generations: {n_generations}", end='\r')
         tour, distance = genetic_algorithm(coordinates, population_size, n_generations, crossover_rate, mutation_rate)
+        # print(f'Distance for run {run + 1}: {distance}')
         distances.append(distance)
         if distance < best_overall_distance:
             best_overall_distance = distance
@@ -142,10 +139,8 @@ def execute_with_tuned_parameters(coordinates, best_params, runs):
 
     return distances, best_overall_distance, best_overall_tour, np.mean(distances), np.std(distances)
 
+
 def plot_solution(coordinates, solution, ax):
-    """
-    Plot the TSP path on a given axes.
-    """
     ordered_coords = [coordinates[i] for i in solution] + [coordinates[solution[0]]]
     xs, ys = zip(*ordered_coords)
     ax.plot(xs, ys, 'o-', markersize=5, linewidth=1, label='Path')
@@ -157,10 +152,8 @@ def plot_solution(coordinates, solution, ax):
     ax.set_ylabel('Y Coordinate')
     ax.legend()
 
+
 def plot_run_statistics(distances, average_distance, std_deviation, ax):
-    """
-    Plot the performance statistics on a given axes.
-    """
     runs = list(range(1, len(distances) + 1))
     ax.plot(runs, distances, 'o-', label='Distance per Run')
     ax.axhline(y=average_distance, color='r', linestyle='-', label='Average Distance')
@@ -171,10 +164,13 @@ def plot_run_statistics(distances, average_distance, std_deviation, ax):
     ax.set_title('Performance over Multiple Runs in GA')
     ax.legend()
 
+
 def run(coordinates, total_trials, population_sizes, crossover_rates, mutation_rates, n_generations, runs):
-    best_params = parameter_tuning(coordinates, total_trials, population_sizes, crossover_rates, mutation_rates, n_generations)
+    best_params = parameter_tuning(coordinates, total_trials, population_sizes, crossover_rates, mutation_rates,
+                                   n_generations)
     print(f"Best Parameters: {best_params}")
-    distances, best_overall_distance, best_solution, average_distance, std_deviation = execute_with_tuned_parameters(coordinates, best_params, runs)
+    distances, best_overall_distance, best_solution, average_distance, std_deviation = execute_with_tuned_parameters(
+        coordinates, best_params, runs)
     print(f"Best Overall Distance: {best_overall_distance}")
     print(f"Average Distance: {average_distance}")
     print(f"Standard Deviation: {std_deviation}")
@@ -185,20 +181,4 @@ def run(coordinates, total_trials, population_sizes, crossover_rates, mutation_r
     plt.tight_layout()
     plt.show()
 
-if __name__ == '__main__':
-    start_time = time.time()
-
-    file_path = 'att48.tsp'
-    coordinates = parse_tsp_file(file_path)
-
-    population_sizes = [50]
-    crossover_rates = [0.6, 0.7, 0.8, 0.9]
-    mutation_rates = [0.01, 0.05, 0.1]
-    n_generations = 100
-
-    total_trials = 100
-    runs = 30
-
-    run(coordinates, total_trials, population_sizes, crossover_rates, mutation_rates, n_generations, runs)
-
-    print(f"--- {time.time() - start_time} seconds ---")
+    return distances
